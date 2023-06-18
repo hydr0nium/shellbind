@@ -1,6 +1,6 @@
 # shellbind
 
-Shellbind is a python script that allows to bind a semi-interactive shell from the terminal to an existing crude webshell.
+Shellbind is a python script that allows to bind a semi- or fully-interactive shell to an existing crude webshell.
 
 ### Installation:
 
@@ -9,6 +9,7 @@ git clone https://github.com/hydr0nium/shellbind.git
 python shellbind.py
 ```
 
+TODO Fix Usage and add reverse shell
 ### Usage
 ```bash
 usage: shellbind.py [-h] -p PARAMETER NAME [-X METHOD] -u HOST [-D]
