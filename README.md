@@ -4,9 +4,7 @@ Shellbind is a python script that allows to bind a semi- or fully-interactive sh
 
 ### Installation:
 ```bash
-git clone https://github.com/hydr0nium/shellbind.git
-cd shellbind
-python3 shellbind.py [...]
+pip install shellbind
 ```
 
 ### Usage
